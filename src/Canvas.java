@@ -2,9 +2,12 @@ import javax.swing.JPanel;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 public class Canvas extends JPanel {
+    private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(Parameters.NUMB_OF_THREADS);
     private static final Dimension FLOW_FIELD_SIZE = new Dimension(100, 56);
     private final NoiseGenerator noise = new NoiseGenerator();
     private Vector2D[][] vectors = new Vector2D[FLOW_FIELD_SIZE.height][FLOW_FIELD_SIZE.width];
@@ -75,9 +78,27 @@ public class Canvas extends JPanel {
 
 
     public void draw(Graphics g) {
-        double yoff = (double) (screen.getHeight()) / vectors.length, xoff = (double) (screen.getWidth()) / vectors[0].length;
-
         g.setColor(Parameters.FOREGROUND);
+
+        int step = agents.length / Parameters.NUMB_OF_THREADS;
+
+        for (int i = step; i < agents.length; i += step) {
+            final int temp = i;
+            if (i == step + (agents.length % Parameters.NUMB_OF_THREADS)) {
+                EXECUTOR.submit(() -> drawFlows(g, temp - step, temp + (agents.length % Parameters.NUMB_OF_THREADS)));
+            } else {
+                EXECUTOR.submit(() -> drawFlows(g, temp - step, temp));
+            }
+        }
+        //drawFlows(g, 0, 0);
+
+        initializeVectors();
+        this.repaint();
+    }
+
+
+    public void drawFlows(Graphics g, int startingBounds, int endBounds) {
+        double yoff = (double) (screen.getHeight()) / vectors.length, xoff = (double) (screen.getWidth()) / vectors[0].length;
 
         for (int i = 0; i < agents.length; i++) {
             int x = (int) (agents[i].getX() / xoff), y = (int) (agents[i].getY() / yoff);
@@ -87,9 +108,6 @@ public class Canvas extends JPanel {
             agents[i].move();
             g.drawLine(agents[i].getX(), agents[i].getY(), agents[i].getPrev_x(), agents[i].getPrev_y());
         }
-
-        initializeVectors();
-        this.repaint();
     }
 
 

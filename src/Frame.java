@@ -9,7 +9,8 @@ public class Frame extends JFrame {
 
     public Frame() {
         super();
-        this.size = Toolkit.getDefaultToolkit().getScreenSize();
+        //this.size = Toolkit.getDefaultToolkit().getScreenSize();
+        this.size = Parameters.FRAME_SIZE;
         this.canvas = new Canvas(this.size);
 
         this.setSize(this.size);
